@@ -8,16 +8,21 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json({ limit: '25mb' }));
 
-const DATA_DIR = path.join(__dirname, 'data');
+// Vercel Serverless-এ ফাইল রাইট করার জন্য /tmp ফোল্ডার ব্যবহার করা নিরাপদ
+const DATA_DIR = process.env.VERCEL ? '/tmp/data' : path.join(__dirname, 'data');
 const STORE_FILE = path.join(DATA_DIR, 'cms-store.json');
 
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  } catch (err) {
+    console.error('Error creating data dir:', err);
+  }
 }
 
 // In-memory cache loaded from file if exists
@@ -45,7 +50,11 @@ app.post('/api/cms/sync', (req, res) => {
       ...data,
       updatedAt: new Date().toISOString()
     };
-    fs.writeFileSync(STORE_FILE, JSON.stringify(cmsCache, null, 2), 'utf-8');
+    try {
+      fs.writeFileSync(STORE_FILE, JSON.stringify(cmsCache, null, 2), 'utf-8');
+    } catch (e) {
+      console.warn('Could not write file in serverless env:', e);
+    }
     return res.json({ success: true, message: 'CMS data successfully synced to backend storage', timestamp: cmsCache.updatedAt });
   } catch (err: any) {
     console.error('Error saving CMS data:', err);
@@ -67,7 +76,11 @@ app.post('/api/cms/inquiry', (req, res) => {
       ...inquiry,
       receivedAt: new Date().toISOString()
     });
-    fs.writeFileSync(INQUIRIES_FILE, JSON.stringify(inquiries, null, 2), 'utf-8');
+    try {
+      fs.writeFileSync(INQUIRIES_FILE, JSON.stringify(inquiries, null, 2), 'utf-8');
+    } catch (e) {
+      console.warn('Could not write inquiries in serverless env:', e);
+    }
     return res.json({ success: true, message: 'Inquiry saved successfully' });
   } catch (err: any) {
     return res.status(500).json({ success: false, error: err.message });
@@ -152,9 +165,13 @@ async function startServer() {
     }
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`> Sanjog server running on http://0.0.0.0:${PORT}`);
-  });
+  if (!process.env.VERCEL) {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`> Sanjog server running on http://0.0.0.0:${PORT}`);
+    });
+  }
 }
 
 startServer();
+
+export default app;
