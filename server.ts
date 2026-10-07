@@ -1,18 +1,13 @@
 import express from 'express';
-import { createServer as createViteServer } from 'vite';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json({ limit: '25mb' }));
 
-// Vercel Serverless-এ ফাইল রাইট করার জন্য /tmp ফোল্ডার ব্যবহার করা নিরাপদ
+// Vercel Serverless environment handler
 const DATA_DIR = process.env.VERCEL ? '/tmp/data' : path.join(__dirname, 'data');
 const STORE_FILE = path.join(DATA_DIR, 'cms-store.json');
 
@@ -96,7 +91,6 @@ app.post('/api/cms/test-supabase', async (req, res) => {
 
   try {
     const cleanUrl = url.trim().replace(/\/+$/, '');
-    // Test Supabase REST endpoint
     const response = await fetch(`${cleanUrl}/rest/v1/`, {
       method: 'GET',
       headers: {
@@ -146,32 +140,10 @@ app.post('/api/cms/test-mongodb', async (req, res) => {
   });
 });
 
-async function startServer() {
-  const isDev = process.env.NODE_ENV !== 'production';
-
-  if (isDev) {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(__dirname, 'dist');
-    if (fs.existsSync(distPath)) {
-      app.use(express.static(distPath));
-      app.get('*', (req, res) => {
-        res.sendFile(path.join(distPath, 'index.html'));
-      });
-    }
-  }
-
-  if (!process.env.VERCEL) {
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`> Sanjog server running on http://0.0.0.0:${PORT}`);
-    });
-  }
+if (!process.env.VERCEL) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`> Sanjog server running on http://0.0.0.0:${PORT}`);
+  });
 }
-
-startServer();
 
 export default app;
