@@ -1,0 +1,6 @@
+{
+  "name": "Sanjog | Highway Safety, Construction Machinery & Infrastructure Equipment",
+  "description": "Sanjog is a premier manufacturer and supplier of highway crash barriers (W-Beam & Thrie Beam), high mast lighting towers, mining drill rods, concrete machinery, road marking equipment, and industrial infrastructure materials.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
